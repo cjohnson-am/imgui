@@ -89,8 +89,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "imgui.h"
+#include "../imgui.h"
 #include "imgui_impl_opengl3.h"
+#include "lib_graphics/Texture.hpp"
+
 #include <stdio.h>
 #if defined(_MSC_VER) && _MSC_VER <= 1500 // MSVC 2008 or earlier
 #include <stddef.h>     // intptr_t
@@ -492,13 +494,22 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
                 glScissor((int)clip_min.x, (int)((float)fb_height - clip_max.y), (int)(clip_max.x - clip_min.x), (int)(clip_max.y - clip_min.y));
 
                 // Bind texture, Draw
-                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->GetTexID());
+                Texture* p_tex = (Texture*)pcmd->GetTexID();
+                if (p_tex->channels == 1) {
+                    glUniform1i(3, true);
+                }
+                if (p_tex->is_srgb)  {
+                    glUniform1i(2, true);
+                }
+                glBindTexture(GL_TEXTURE_2D, p_tex->id);
 #ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
                 if (bd->GlVersion >= 320)
                     glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
                 else
 #endif
                 glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)));
+                glUniform1i(2, false);
+                glUniform1i(3, false);
             }
         }
     }
@@ -562,7 +573,10 @@ bool ImGui_ImplOpenGL3_CreateFontsTexture()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
-    io.Fonts->SetTexID((ImTextureID)(intptr_t)bd->FontTexture);
+    Texture* tex = new Texture(); // we don't care about leaking this because it's alloc-once and program lifetime
+    tex->id = bd->FontTexture;
+    tex->channels = 1;
+    io.Fonts->SetTexID((ImTextureID)tex);
 
     // Restore state
     glBindTexture(GL_TEXTURE_2D, last_texture);
@@ -634,131 +648,43 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
 #endif
 
     // Parse GLSL version string
-    int glsl_version = 130;
+    int glsl_version = 410;
     sscanf(bd->GlslVersionString, "#version %d", &glsl_version);
-
-    const GLchar* vertex_shader_glsl_120 =
-        "uniform mat4 ProjMtx;\n"
-        "attribute vec2 Position;\n"
-        "attribute vec2 UV;\n"
-        "attribute vec4 Color;\n"
-        "varying vec2 Frag_UV;\n"
-        "varying vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
-
-    const GLchar* vertex_shader_glsl_130 =
-        "uniform mat4 ProjMtx;\n"
-        "in vec2 Position;\n"
-        "in vec2 UV;\n"
-        "in vec4 Color;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
-
-    const GLchar* vertex_shader_glsl_300_es =
-        "precision highp float;\n"
-        "layout (location = 0) in vec2 Position;\n"
-        "layout (location = 1) in vec2 UV;\n"
-        "layout (location = 2) in vec4 Color;\n"
-        "uniform mat4 ProjMtx;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Frag_UV = UV;\n"
-        "    Frag_Color = Color;\n"
-        "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
 
     const GLchar* vertex_shader_glsl_410_core =
         "layout (location = 0) in vec2 Position;\n"
         "layout (location = 1) in vec2 UV;\n"
         "layout (location = 2) in vec4 Color;\n"
-        "uniform mat4 ProjMtx;\n"
+        "layout (location = 0) uniform mat4 ProjMtx;\n"
         "out vec2 Frag_UV;\n"
         "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
+        "void main() {\n"
         "    Frag_UV = UV;\n"
         "    Frag_Color = Color;\n"
         "    gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
         "}\n";
-
-    const GLchar* fragment_shader_glsl_120 =
-        "#ifdef GL_ES\n"
-        "    precision mediump float;\n"
-        "#endif\n"
-        "uniform sampler2D Texture;\n"
-        "varying vec2 Frag_UV;\n"
-        "varying vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    gl_FragColor = Frag_Color * texture2D(Texture, Frag_UV.st);\n"
-        "}\n";
-
-    const GLchar* fragment_shader_glsl_130 =
-        "uniform sampler2D Texture;\n"
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-        "}\n";
-
-    const GLchar* fragment_shader_glsl_300_es =
-        "precision mediump float;\n"
-        "uniform sampler2D Texture;\n"
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "layout (location = 0) out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
-        "}\n";
-
     const GLchar* fragment_shader_glsl_410_core =
         "in vec2 Frag_UV;\n"
         "in vec4 Frag_Color;\n"
-        "uniform sampler2D Texture;\n"
+        "layout (location = 1) uniform sampler2D Texture;\n"
+        "layout (location = 2) uniform bool srgb;\n"
+        "layout (location = 3) uniform bool one_channel;\n"
         "layout (location = 0) out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "    Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
+        "void main() {\n"
+        "    vec4 read = texture(Texture, Frag_UV.st);\n"
+        "    read.rgb = one_channel ? vec3(read.r)                 : read.rgb;\n"
+        "    read.rgb = srgb        ? pow(read.rgb, vec3(1.0/2.2)) : read.rgb;\n"
+        "    Out_Color = Frag_Color * read;\n"
         "}\n";
 
     // Select shaders matching our GLSL versions
     const GLchar* vertex_shader = NULL;
     const GLchar* fragment_shader = NULL;
-    if (glsl_version < 130)
-    {
-        vertex_shader = vertex_shader_glsl_120;
-        fragment_shader = fragment_shader_glsl_120;
-    }
-    else if (glsl_version >= 410)
-    {
+    if (glsl_version >= 410) {
         vertex_shader = vertex_shader_glsl_410_core;
         fragment_shader = fragment_shader_glsl_410_core;
-    }
-    else if (glsl_version == 300)
-    {
-        vertex_shader = vertex_shader_glsl_300_es;
-        fragment_shader = fragment_shader_glsl_300_es;
-    }
-    else
-    {
-        vertex_shader = vertex_shader_glsl_130;
-        fragment_shader = fragment_shader_glsl_130;
+    } else {
+        return GL_FALSE;
     }
 
     // Create shaders

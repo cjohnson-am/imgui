@@ -14,6 +14,34 @@
 
 #pragma once
 
+#include "lib_basic/Vector.hpp"
+#include "lib_graphics/Texture.hpp"
+
+#define IM_VEC2_CLASS_EXTRA                                             \
+ImVec2(const v2& v) { x = v.x; y = v.y; }                               \
+ImVec2(const v2_i& v) { x = (int) v.x; y = (int) v.y; }                 \
+operator v2() const { return v2(x,y); }                                 \
+operator v2_i() const { return v2_i((int) x, (int) y); }
+
+
+#define IM_VEC4_CLASS_EXTRA                                             \
+ImVec4(const int hex_input) {                                           \
+        x = float((hex_input >> 24) & 0xff) / 255.0f;                   \
+        y = float((hex_input >> 16) & 0xff) / 255.0f;                   \
+        z = float((hex_input >>  8) & 0xff) / 255.0f;                   \
+        w = float((hex_input >>  0) & 0xff) / 255.0f;                   \
+}                                                                       \
+ImVec4(float base, float new_w) {                                       \
+        x = base; y = base; z = base; w = new_w;                        \
+}                                                                       \
+ImVec4(ImVec4 base, float new_w) {                                      \
+        x = base.x; y = base.y; z = base.z; w = new_w;                  \
+}                                                                       \
+ImVec4(const v4& v) { x = v.x; y = v.y; z = v.z; w = v.w; }             \
+operator v4() const { return v4(x,y,z,w); }
+
+#define ImTextureID Texture*
+
 //---- Define assertion handler. Defaults to calling assert().
 // If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)

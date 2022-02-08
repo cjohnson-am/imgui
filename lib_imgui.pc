@@ -1,0 +1,6 @@
+Name: Imgui
+Version: 1.0
+Description: 
+Libs: -ldl
+packages =
+extra_build_files = lib_imgui/backends/imgui_impl_opengl3.cpp lib_imgui/backends/imgui_impl_glfw.cpp

@@ -78,6 +78,7 @@ Index of this file:
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
+#include "imconfig.h"
 
 // System includes
 #include <ctype.h>          // toupper
@@ -3693,18 +3694,6 @@ struct MyItem
 const ImGuiTableSortSpecs* MyItem::s_current_sort_specs = NULL;
 }
 
-// Make the UI compact because there are so many fields
-static void PushStyleCompact()
-{
-    ImGuiStyle& style = ImGui::GetStyle();
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, (float)(int)(style.FramePadding.y * 0.60f)));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, (float)(int)(style.ItemSpacing.y * 0.60f)));
-}
-
-static void PopStyleCompact()
-{
-    ImGui::PopStyleVar(2);
-}
 
 // Show a combo box with a choice of sizing policies
 static void EditTableSizingFlags(ImGuiTableFlags* p_flags)
@@ -3895,7 +3884,7 @@ static void ShowDemoWindowTables()
         static bool display_headers = false;
         static int contents_type = CT_Text;
 
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_RowBg", &flags, ImGuiTableFlags_RowBg);
         ImGui::CheckboxFlags("ImGuiTableFlags_Borders", &flags, ImGuiTableFlags_Borders);
         ImGui::SameLine(); HelpMarker("ImGuiTableFlags_Borders\n = ImGuiTableFlags_BordersInnerV\n | ImGuiTableFlags_BordersOuterV\n | ImGuiTableFlags_BordersInnerV\n | ImGuiTableFlags_BordersOuterH");
@@ -3922,7 +3911,7 @@ static void ShowDemoWindowTables()
         ImGui::SameLine(); ImGui::RadioButton("FillButton", &contents_type, CT_FillButton);
         ImGui::Checkbox("Display headers", &display_headers);
         ImGui::CheckboxFlags("ImGuiTableFlags_NoBordersInBody", &flags, ImGuiTableFlags_NoBordersInBody); ImGui::SameLine(); HelpMarker("Disable vertical borders in columns Body (borders will always appears in Headers");
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table1", 3, flags))
         {
@@ -3963,11 +3952,11 @@ static void ShowDemoWindowTables()
         // By default, if we don't enable ScrollX the sizing policy for each columns is "Stretch"
         // Each columns maintain a sizing weight, and they will occupy all available width.
         static ImGuiTableFlags flags = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_ContextMenuInBody;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &flags, ImGuiTableFlags_Resizable);
         ImGui::CheckboxFlags("ImGuiTableFlags_BordersV", &flags, ImGuiTableFlags_BordersV);
         ImGui::SameLine(); HelpMarker("Using the _Resizable flag automatically enables the _BordersInnerV flag as well, this is why the resize borders are still showing when unchecking this.");
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table1", 3, flags))
         {
@@ -3998,10 +3987,10 @@ static void ShowDemoWindowTables()
             "Using _Resizable + _SizingFixedFit flags.\n"
             "Fixed-width columns generally makes more sense if you want to use horizontal scrolling.\n\n"
             "Double-click a column border to auto-fit the column to its contents.");
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_ContextMenuInBody;
         ImGui::CheckboxFlags("ImGuiTableFlags_NoHostExtendX", &flags, ImGuiTableFlags_NoHostExtendX);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table1", 3, flags))
         {
@@ -4078,13 +4067,13 @@ static void ShowDemoWindowTables()
             "Click and drag column headers to reorder columns.\n\n"
             "Right-click on a header to open a context menu.");
         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &flags, ImGuiTableFlags_Resizable);
         ImGui::CheckboxFlags("ImGuiTableFlags_Reorderable", &flags, ImGuiTableFlags_Reorderable);
         ImGui::CheckboxFlags("ImGuiTableFlags_Hideable", &flags, ImGuiTableFlags_Hideable);
         ImGui::CheckboxFlags("ImGuiTableFlags_NoBordersInBody", &flags, ImGuiTableFlags_NoBordersInBody);
         ImGui::CheckboxFlags("ImGuiTableFlags_NoBordersInBodyUntilResize", &flags, ImGuiTableFlags_NoBordersInBodyUntilResize); ImGui::SameLine(); HelpMarker("Disable vertical borders in columns Body until hovered for resize (borders will always appears in Headers)");
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table1", 3, flags))
         {
@@ -4144,7 +4133,7 @@ static void ShowDemoWindowTables()
             "In this demo we don't show horizontal borders to emphasis how they don't affect default horizontal padding.");
 
         static ImGuiTableFlags flags1 = ImGuiTableFlags_BordersV;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_PadOuterX", &flags1, ImGuiTableFlags_PadOuterX);
         ImGui::SameLine(); HelpMarker("Enable outer-most padding (default if ImGuiTableFlags_BordersOuterV is set)");
         ImGui::CheckboxFlags("ImGuiTableFlags_NoPadOuterX", &flags1, ImGuiTableFlags_NoPadOuterX);
@@ -4155,7 +4144,7 @@ static void ShowDemoWindowTables()
         ImGui::CheckboxFlags("ImGuiTableFlags_BordersInnerV", &flags1, ImGuiTableFlags_BordersInnerV);
         static bool show_headers = false;
         ImGui::Checkbox("show_headers", &show_headers);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table_padding", 3, flags1))
         {
@@ -4197,7 +4186,7 @@ static void ShowDemoWindowTables()
         static ImVec2 cell_padding(0.0f, 0.0f);
         static bool show_widget_frame_bg = true;
 
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_Borders", &flags2, ImGuiTableFlags_Borders);
         ImGui::CheckboxFlags("ImGuiTableFlags_BordersH", &flags2, ImGuiTableFlags_BordersH);
         ImGui::CheckboxFlags("ImGuiTableFlags_BordersV", &flags2, ImGuiTableFlags_BordersV);
@@ -4207,7 +4196,7 @@ static void ShowDemoWindowTables()
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &flags2, ImGuiTableFlags_Resizable);
         ImGui::Checkbox("show_widget_frame_bg", &show_widget_frame_bg);
         ImGui::SliderFloat2("CellPadding", &cell_padding.x, 0.0f, 10.0f, "%.0f");
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, cell_padding);
         if (ImGui::BeginTable("table_padding_2", 3, flags2))
@@ -4242,10 +4231,10 @@ static void ShowDemoWindowTables()
     if (ImGui::TreeNode("Sizing policies"))
     {
         static ImGuiTableFlags flags1 = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &flags1, ImGuiTableFlags_Resizable);
         ImGui::CheckboxFlags("ImGuiTableFlags_NoHostExtendX", &flags1, ImGuiTableFlags_NoHostExtendX);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         static ImGuiTableFlags sizing_policy_flags[4] = { ImGuiTableFlags_SizingFixedFit, ImGuiTableFlags_SizingFixedSame, ImGuiTableFlags_SizingStretchProp, ImGuiTableFlags_SizingStretchSame };
         for (int table_n = 0; table_n < 4; table_n++)
@@ -4291,7 +4280,7 @@ static void ShowDemoWindowTables()
         static int contents_type = CT_ShowWidth;
         static int column_count = 3;
 
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::PushID("Advanced");
         ImGui::PushItemWidth(TEXT_BASE_WIDTH * 30);
         EditTableSizingFlags(&flags);
@@ -4310,7 +4299,7 @@ static void ShowDemoWindowTables()
         ImGui::CheckboxFlags("ImGuiTableFlags_NoClip", &flags, ImGuiTableFlags_NoClip);
         ImGui::PopItemWidth();
         ImGui::PopID();
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table2", column_count, flags, ImVec2(0.0f, TEXT_BASE_HEIGHT * 7)))
         {
@@ -4348,9 +4337,9 @@ static void ShowDemoWindowTables()
         HelpMarker("Here we activate ScrollY, which will create a child window container to allow hosting scrollable contents.\n\nWe also demonstrate using ImGuiListClipper to virtualize the submission of many items.");
         static ImGuiTableFlags flags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
 
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_ScrollY", &flags, ImGuiTableFlags_ScrollY);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         // When using ScrollX or ScrollY we need to specify a size for our table container!
         // Otherwise by default the table will fit all available space, like a BeginChild() call.
@@ -4397,7 +4386,7 @@ static void ShowDemoWindowTables()
         static int freeze_cols = 1;
         static int freeze_rows = 1;
 
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &flags, ImGuiTableFlags_Resizable);
         ImGui::CheckboxFlags("ImGuiTableFlags_ScrollX", &flags, ImGuiTableFlags_ScrollX);
         ImGui::CheckboxFlags("ImGuiTableFlags_ScrollY", &flags, ImGuiTableFlags_ScrollY);
@@ -4405,7 +4394,7 @@ static void ShowDemoWindowTables()
         ImGui::DragInt("freeze_cols", &freeze_cols, 0.2f, 0, 9, NULL, ImGuiSliderFlags_NoInput);
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight());
         ImGui::DragInt("freeze_rows", &freeze_rows, 0.2f, 0, 9, NULL, ImGuiSliderFlags_NoInput);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         // When using ScrollX or ScrollY we need to specify a size for our table container!
         // Otherwise by default the table will fit all available space, like a BeginChild() call.
@@ -4452,14 +4441,14 @@ static void ShowDemoWindowTables()
             "Without an explicit value, inner_width is == outer_size.x and therefore using Stretch columns + ScrollX together doesn't make sense.");
         static ImGuiTableFlags flags2 = ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
         static float inner_width = 1000.0f;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::PushID("flags3");
         ImGui::PushItemWidth(TEXT_BASE_WIDTH * 30);
         ImGui::CheckboxFlags("ImGuiTableFlags_ScrollX", &flags2, ImGuiTableFlags_ScrollX);
         ImGui::DragFloat("inner_width", &inner_width, 1.0f, 0.0f, FLT_MAX, "%.1f");
         ImGui::PopItemWidth();
         ImGui::PopID();
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
         if (ImGui::BeginTable("table2", 7, flags2, outer_size, inner_width))
         {
             for (int cell = 0; cell < 20 * 7; cell++)
@@ -4485,7 +4474,7 @@ static void ShowDemoWindowTables()
 
         if (ImGui::BeginTable("table_columns_flags_checkboxes", column_count, ImGuiTableFlags_None))
         {
-            PushStyleCompact();
+            ImGui::PushStyleCompact();
             for (int column = 0; column < column_count; column++)
             {
                 ImGui::TableNextColumn();
@@ -4500,7 +4489,7 @@ static void ShowDemoWindowTables()
                 ShowTableColumnsStatusFlags(column_flags_out[column]);
                 ImGui::PopID();
             }
-            PopStyleCompact();
+            ImGui::PopStyleCompact();
             ImGui::EndTable();
         }
 
@@ -4545,10 +4534,10 @@ static void ShowDemoWindowTables()
         HelpMarker("Using TableSetupColumn() to setup default width.");
 
         static ImGuiTableFlags flags1 = ImGuiTableFlags_Borders | ImGuiTableFlags_NoBordersInBodyUntilResize;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_Resizable", &flags1, ImGuiTableFlags_Resizable);
         ImGui::CheckboxFlags("ImGuiTableFlags_NoBordersInBodyUntilResize", &flags1, ImGuiTableFlags_NoBordersInBodyUntilResize);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
         if (ImGui::BeginTable("table1", 3, flags1))
         {
             // We could also set ImGuiTableFlags_SizingFixedFit on the table and all columns will default to ImGuiTableColumnFlags_WidthFixed.
@@ -4574,11 +4563,11 @@ static void ShowDemoWindowTables()
         HelpMarker("Using TableSetupColumn() to setup explicit width.\n\nUnless _NoKeepColumnsVisible is set, fixed columns with set width may still be shrunk down if there's not enough space in the host.");
 
         static ImGuiTableFlags flags2 = ImGuiTableFlags_None;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_NoKeepColumnsVisible", &flags2, ImGuiTableFlags_NoKeepColumnsVisible);
         ImGui::CheckboxFlags("ImGuiTableFlags_BordersInnerV", &flags2, ImGuiTableFlags_BordersInnerV);
         ImGui::CheckboxFlags("ImGuiTableFlags_BordersOuterV", &flags2, ImGuiTableFlags_BordersOuterV);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
         if (ImGui::BeginTable("table2", 4, flags2))
         {
             // We could also set ImGuiTableFlags_SizingFixedFit on the table and all columns will default to ImGuiTableColumnFlags_WidthFixed.
@@ -4676,13 +4665,13 @@ static void ShowDemoWindowTables()
         // Showcasing use of ImGuiTableFlags_NoHostExtendX and ImGuiTableFlags_NoHostExtendY
         // Important to that note how the two flags have slightly different behaviors!
         ImGui::Text("Using NoHostExtendX and NoHostExtendY:");
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX;
         ImGui::CheckboxFlags("ImGuiTableFlags_NoHostExtendX", &flags, ImGuiTableFlags_NoHostExtendX);
         ImGui::SameLine(); HelpMarker("Make outer width auto-fit to columns, overriding outer_size.x value.\n\nOnly available when ScrollX/ScrollY are disabled and Stretch columns are not used.");
         ImGui::CheckboxFlags("ImGuiTableFlags_NoHostExtendY", &flags, ImGuiTableFlags_NoHostExtendY);
         ImGui::SameLine(); HelpMarker("Make outer height stop exactly at outer_size.y (prevent auto-extending table past the limit).\n\nOnly available when ScrollX/ScrollY are disabled. Data below the limit will be clipped and not visible.");
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         ImVec2 outer_size = ImVec2(0.0f, TEXT_BASE_HEIGHT * 5.5f);
         if (ImGui::BeginTable("table1", 3, flags, outer_size))
@@ -4745,7 +4734,7 @@ static void ShowDemoWindowTables()
         static int row_bg_target = 1;
         static int cell_bg_type = 1;
 
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_Borders", &flags, ImGuiTableFlags_Borders);
         ImGui::CheckboxFlags("ImGuiTableFlags_RowBg", &flags, ImGuiTableFlags_RowBg);
         ImGui::SameLine(); HelpMarker("ImGuiTableFlags_RowBg automatically sets RowBg0 to alternative colors pulled from the Style.");
@@ -4755,7 +4744,7 @@ static void ShowDemoWindowTables()
         IM_ASSERT(row_bg_type >= 0 && row_bg_type <= 2);
         IM_ASSERT(row_bg_target >= 0 && row_bg_target <= 1);
         IM_ASSERT(cell_bg_type >= 0 && cell_bg_type <= 1);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table1", 5, flags))
         {
@@ -4967,9 +4956,9 @@ static void ShowDemoWindowTables()
         HelpMarker("By default, right-clicking over a TableHeadersRow()/TableHeader() line will open the default context-menu.\nUsing ImGuiTableFlags_ContextMenuInBody we also allow right-clicking over columns body.");
         static ImGuiTableFlags flags1 = ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Borders | ImGuiTableFlags_ContextMenuInBody;
 
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_ContextMenuInBody", &flags1, ImGuiTableFlags_ContextMenuInBody);
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         // Context Menus: first example
         // [1.1] Right-click on the TableHeadersRow() line to open the default table context menu.
@@ -5127,12 +5116,12 @@ static void ShowDemoWindowTables()
             ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_Sortable | ImGuiTableFlags_SortMulti
             | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_NoBordersInBody
             | ImGuiTableFlags_ScrollY;
-        PushStyleCompact();
+        ImGui::PushStyleCompact();
         ImGui::CheckboxFlags("ImGuiTableFlags_SortMulti", &flags, ImGuiTableFlags_SortMulti);
         ImGui::SameLine(); HelpMarker("When sorting is enabled: hold shift when clicking headers to sort on multiple column. TableGetSortSpecs() may return specs where (SpecsCount > 1).");
         ImGui::CheckboxFlags("ImGuiTableFlags_SortTristate", &flags, ImGuiTableFlags_SortTristate);
         ImGui::SameLine(); HelpMarker("When sorting is enabled: allow no sorting, disable default sorting. TableGetSortSpecs() may return specs where (SpecsCount == 0).");
-        PopStyleCompact();
+        ImGui::PopStyleCompact();
 
         if (ImGui::BeginTable("table_sorting", 4, flags, ImVec2(0.0f, TEXT_BASE_HEIGHT * 15), 0.0f))
         {
@@ -5219,7 +5208,7 @@ static void ShowDemoWindowTables()
         if (ImGui::TreeNode("Options"))
         {
             // Make the UI compact because there are so many fields
-            PushStyleCompact();
+            ImGui::PushStyleCompact();
             ImGui::PushItemWidth(TEXT_BASE_WIDTH * 28.0f);
 
             if (ImGui::TreeNodeEx("Features:", ImGuiTreeNodeFlags_DefaultOpen))
@@ -5323,7 +5312,7 @@ static void ShowDemoWindowTables()
             }
 
             ImGui::PopItemWidth();
-            PopStyleCompact();
+            ImGui::PopStyleCompact();
             ImGui::Spacing();
             ImGui::TreePop();
         }

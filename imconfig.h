@@ -17,6 +17,9 @@
 #include "lib_basic/Vector.hpp"
 #include "lib_graphics/Texture.hpp"
 
+#include "lib_glad/glad.h"
+#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+
 #define IM_VEC2_CLASS_EXTRA                                             \
 ImVec2(const v2& v) { x = v.x; y = v.y; }                               \
 ImVec2(const v2_i& v) { x = (int) v.x; y = (int) v.y; }                 \

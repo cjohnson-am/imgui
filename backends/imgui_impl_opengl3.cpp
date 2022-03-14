@@ -187,7 +187,9 @@ struct ImGui_ImplOpenGL3_Data
     char            GlslVersionString[32];   // Specified by user or detected based on compile time GL settings.
     GLuint          FontTexture;
     GLuint          ShaderHandle;
-    GLint           AttribLocationTex;       // Uniforms location
+    GLint           AttribLocationType;       // Uniforms location
+    GLint           AttribLocationLayer;       // Uniforms location
+    GLint           AttribLocationFace;       // Uniforms location
     GLint           AttribLocationProjMtx;
     GLuint          AttribLocationVtxPos;    // Vertex attributes location
     GLuint          AttribLocationVtxUV;
@@ -367,7 +369,6 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
         { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
     };
     glUseProgram(bd->ShaderHandle);
-    glUniform1i(bd->AttribLocationTex, 0);
     glUniformMatrix4fv(bd->AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
 
 #ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_BIND_SAMPLER
@@ -495,21 +496,24 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
 
                 // Bind texture, Draw
                 Texture* p_tex = (Texture*)pcmd->GetTexID();
-                if (p_tex->channels == 1) {
-                    glUniform1i(3, true);
-                }
-                if (p_tex->is_srgb)  {
-                    glUniform1i(2, true);
-                }
-                glBindTexture(GL_TEXTURE_2D, p_tex->id);
+                glUniform1f(bd->AttribLocationLayer, p_tex->inspected_layer);
+                glUniform1i(bd->AttribLocationFace, p_tex->inspected_face);
+                switch (p_tex->type) {
+                    case GL_NONE: break;
+                    case GL_TEXTURE_1D:             glBindTextureUnit(1, p_tex->id); glUniform1i(bd->AttribLocationType, 1); break;
+                    case GL_TEXTURE_2D_MULTISAMPLE:
+                    case GL_TEXTURE_2D:             glBindTextureUnit(2, p_tex->id); glUniform1i(bd->AttribLocationType, 2); break;
+                    case GL_TEXTURE_3D:             glBindTextureUnit(3, p_tex->id); glUniform1i(bd->AttribLocationType, 3); break;
+                    case GL_TEXTURE_CUBE_MAP:       glBindTextureUnit(4, p_tex->id); glUniform1i(bd->AttribLocationType, 4); break;
+                    case GL_TEXTURE_CUBE_MAP_ARRAY: glBindTextureUnit(5, p_tex->id); glUniform1i(bd->AttribLocationType, 5); break;
+                    default: break;
+                };
 #ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
                 if (bd->GlVersion >= 320)
                     glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
                 else
 #endif
                 glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)));
-                glUniform1i(2, false);
-                glUniform1i(3, false);
             }
         }
     }
@@ -575,6 +579,7 @@ bool ImGui_ImplOpenGL3_CreateFontsTexture()
     // Store our identifier
     Texture* tex = new Texture(); // we don't care about leaking this because it's alloc-once and program lifetime
     tex->id = bd->FontTexture;
+    tex->type = GL_TEXTURE_2D;
     tex->channels = 1;
     io.Fonts->SetTexID((ImTextureID)tex);
 
@@ -666,17 +671,49 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
     const GLchar* fragment_shader_glsl_410_core =
         "in vec2 Frag_UV;\n"
         "in vec4 Frag_Color;\n"
-        "layout (location = 1) uniform sampler2D Texture;\n"
-        "layout (location = 2) uniform bool srgb;\n"
-        "layout (location = 3) uniform bool one_channel;\n"
+        "layout (binding = 1) uniform sampler1D u_texure1d;\n"
+        "layout (binding = 2) uniform sampler2D u_texure2d;\n"
+        "layout (binding = 3) uniform sampler2DArray u_texure2darray;\n"
+        "layout (binding = 4) uniform samplerCube u_texurecube;\n"
+        "layout (binding = 5) uniform samplerCubeArray u_texurecubearray;\n"
+        "uniform int u_type;\n"
+        "uniform float u_layer;\n"
+        "uniform int u_face;\n"
         "layout (location = 0) out vec4 Out_Color;\n"
         "void main() {\n"
-        "    vec4 read = texture(Texture, Frag_UV.st);\n"
-        "    read.rgb = one_channel ? vec3(read.r)                 : read.rgb;\n"
-        "    read.rgb = srgb        ? pow(read.rgb, vec3(1.0/2.2)) : read.rgb;\n"
-        "    Out_Color = Frag_Color * read;\n"
-        "}\n";
-
+        "    switch(u_type) {\n"
+        "        case 1: {\n"
+        "            Out_Color = Frag_Color * texture(u_texure1d, Frag_UV.s);\n"
+        "        } break;\n"
+        "        case 2: {\n"
+        "            Out_Color = Frag_Color * texture(u_texure2d, Frag_UV);\n"
+        "        } break;\n"
+        "        case 3: {\n"
+        "            Out_Color = Frag_Color * texture(u_texure2darray, vec3(Frag_UV, u_layer));\n"
+        "        } break;\n"
+        "        case 4: {\n"
+        "            vec3 uv = vec3(Frag_UV * vec2(2.0) - vec2(1.0), 1.0);\n"
+        "            uv.z = u_face == 5 || u_face == 6 ? uv.x : uv.z;\n"
+        "            uv.z = u_face == 3 || u_face == 4 ? uv.y : uv.z;\n"       
+        "            uv.x = u_face == 5 || u_face == 6 ? 1.0  : uv.x;\n"
+        "            uv.y = u_face == 3 || u_face == 4 ? 1.0  : uv.y;\n"
+        "            uv = u_face % 2 == 0 ? -uv : uv;\n"
+        "            Out_Color = Frag_Color * texture(u_texurecube, uv);\n"
+        "        } break;\n"
+        "        case 5: {\n"
+        "            vec3 uv = vec3(Frag_UV * vec2(2.0) - vec2(1.0), 1.0);\n"
+        "            uv.z = u_face == 5 || u_face == 6 ? uv.x : uv.z;\n"
+        "            uv.z = u_face == 3 || u_face == 4 ? uv.y : uv.z;\n"       
+        "            uv.x = u_face == 5 || u_face == 6 ? 1.0  : uv.x;\n"
+        "            uv.y = u_face == 3 || u_face == 4 ? 1.0  : uv.y;\n"
+        "            uv = u_face % 2 == 0 ? -uv : uv;\n"
+        "            Out_Color = Frag_Color * texture(u_texurecubearray, vec4(uv, u_layer));\n"
+        "        } break;\n"
+        "        default: {\n"
+        "            Out_Color = vec4(1.0, 0.0, 1.0, 1.0);\n"
+        "        }\n"
+        "    }\n"
+        "};\n";
     // Select shaders matching our GLSL versions
     const GLchar* vertex_shader = NULL;
     const GLchar* fragment_shader = NULL;
@@ -712,11 +749,13 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
     glDeleteShader(vert_handle);
     glDeleteShader(frag_handle);
 
-    bd->AttribLocationTex = glGetUniformLocation(bd->ShaderHandle, "Texture");
     bd->AttribLocationProjMtx = glGetUniformLocation(bd->ShaderHandle, "ProjMtx");
     bd->AttribLocationVtxPos = (GLuint)glGetAttribLocation(bd->ShaderHandle, "Position");
     bd->AttribLocationVtxUV = (GLuint)glGetAttribLocation(bd->ShaderHandle, "UV");
     bd->AttribLocationVtxColor = (GLuint)glGetAttribLocation(bd->ShaderHandle, "Color");
+    bd->AttribLocationType = glGetUniformLocation(bd->ShaderHandle, "u_type");
+    bd->AttribLocationLayer = glGetUniformLocation(bd->ShaderHandle, "u_layer");
+    bd->AttribLocationFace = glGetUniformLocation(bd->ShaderHandle, "u_face");
 
     // Create buffers
     glGenBuffers(1, &bd->VboHandle);
